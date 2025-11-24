@@ -3,7 +3,7 @@ Crime Data State Clustering
 
 Project: K-Means Clustering of US Violent Crime Rates by State
 
-This project applies K-Means clustering to the USArrests dataset to group U.S. states based on violent crime statistics. It then visualizes the clustering results on an interactive, color-coded map using Folium and a GeoJSON file of U.S. state boundaries.
+This project applies K-Means clustering to the USArrests dataset to group U.S. states based on violent crime statistics. It then visualizes the clustering results and a summary on a color-coded map using Folium and a GeoJSON file of U.S. state boundaries.
 
 The main workflow is implemented in:
     K_means_clustering_for_state_crimes.py
@@ -120,7 +120,7 @@ How To Run
 
     A new map with cluster means (per 100K) has been generated: us_clusters_map.html
 
-5. Open us_clusters_map.html in a web browser to explore the interactive map.
+5. Open us_clusters_map.html in a web browser to explore the map and view the cluster summary.
 
 
 --------------------------------------
