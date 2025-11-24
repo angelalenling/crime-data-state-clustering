@@ -35,14 +35,14 @@ The script saves the interactive map as:
 Files
 --------------------------------------
 
-K_means_clustering_for_state_crimes.ipynb
-    Jupyter Notebook that:
-    - Loads and standardizes the USArrests data
+1. K_means_clustering_for_state_crimes.ipynb
+    - Jupyter Notebook that:
+    -Loads and standardizes the USArrests data
     - Runs custom K-Means clustering
     - Computes cluster-wise mean crime rates
     - Builds and saves an interactive Folium map of clustered states
 
-USArrests.csv
+2. USArrests.csv
     CSV file containing the crime data used for clustering, with columns:
     - State        : U.S. state name
     - Murder       : Murder arrests per 100,000 residents
