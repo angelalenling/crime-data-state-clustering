@@ -37,9 +37,9 @@ def kmeans1(X, k):
         raise ValueError(f"number of clusters {k} > number of observations {m}")
 
     # random initial assignment of each observation to a cluster
-    clusters0 = np.random.randint(0, k, m)
+    clusters0 = np.random.randint(0, k, m, dtype=int)
     # holds the actual cluster assignments
-    clusters = np.zeros(m)
+    clusters = np.zeros(m, dtype=int)
 
     while True:
 
@@ -48,8 +48,17 @@ def kmeans1(X, k):
 
         # computes the cluster centroids
         for i in range(k):
-            # cenroid of cluster i placed in c
-            c[i, :] = centroid(X[clusters0 == i])
+            # all points currently assigned to cluster i
+            cluster_points = X[clusters0 == i]
+
+            if cluster_points.size == 0:
+                # if a cluster is empty, reinitialize its centroid
+                # to a random data point to avoid NaNs
+                rand_idx = np.random.randint(0, m)
+                c[i, :] = X[rand_idx, :]
+            else:
+                # cenroid of cluster i placed in c
+                c[i, :] = centroid(cluster_points)
 
         # assign each observation to the nearest centroid
         for i in range(m):  # loop over each data point
@@ -70,9 +79,6 @@ def kmeans1(X, k):
 
         clusters0 = clusters.copy()
 
-    clusters_assigned = len(Counter(clusters))
-    if clusters_assigned != k:
-        raise ValueError(f"clustering solution contains {clusters_assigned} < {k} clusters.")
     return clusters
 
 
@@ -100,19 +106,34 @@ def objective(X, k, cl):
 # the best of the niter candidate solutions is returned.
 def kmeans(X, k, niter=50):
     smallest_dist = float("inf")
-    final_cl = np.zeros(X.shape[0])
+    final_cl = None
+
     for i in range(niter):
         solution = kmeans1(X, k)
+        clusters_assigned = len(np.unique(solution))
+
+        # skip solutions that collapsed to fewer than k clusters
+        if clusters_assigned < k:
+            continue
+
         sum_distances = objective(X, k, solution)
         if sum_distances < smallest_dist:
             smallest_dist = sum_distances
             final_cl = solution
+
+    if final_cl is None:
+        raise ValueError(
+            f"Could not find a solution with {k} non-empty clusters after {niter} runs."
+        )
+
     return final_cl
 
 
 def main():
     # loads dataset
-    US_Arrests_data = pd.read_csv("USArrests.csv")
+    US_Arrests_data = pd.read_csv(
+        r"C:\Users\angie\OneDrive\Documents\School\Arrests_Test\USArrests.csv"
+    )
     # extracts the state names
     US_states = US_Arrests_data['State']
 
