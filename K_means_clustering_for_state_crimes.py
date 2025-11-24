@@ -116,4 +116,92 @@ def main():
     # extracts the state names
     US_states = US_Arrests_data['State']
 
-    #
+    # Extract numerical data before scaling to compute actual means later
+    Original_State_Data = US_Arrests_data.iloc[:, 1:5].values
+
+    # scales the data for clustering (scale each attribute to have mean 0 and std dev 1 )
+    State_Data = Original_State_Data.copy()
+    scaler = StandardScaler()
+    # State_Data is now numpy array with standardized values
+    State_Data = scaler.fit_transform(State_Data)
+
+    # Run k-means
+    num_clusters = 4
+    cl = kmeans(State_Data, num_clusters)
+
+    # Assign states to clusters
+    states_in_cluster = defaultdict(list)
+    for i, state in enumerate(US_states):
+        states_in_cluster[int(cl[i])].append(state)
+
+    # Compute actual means per cluster
+    cluster_actual_means = {}
+    for cluster, states in states_in_cluster.items():
+        indices = [US_states[US_states == state].index[0] for state in states]
+        cluster_actual_means[cluster] = np.mean(Original_State_Data[indices], axis=0)
+
+    # U.S. state boundaries from GeoJSON
+    geojson_url = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json"
+    geojson_data = requests.get(geojson_url).json()
+
+    # color generated for each cluster and each state mapped to its cluster color
+    cluster_colors = {
+        cluster: "#{:06x}".format(random.randint(0, 0xFFFFFF))
+        for cluster in states_in_cluster
+    }
+    state_cluster_map = {
+        state: cluster_colors[cluster]
+        for cluster, states in states_in_cluster.items()
+        for state in states
+    }
+
+    us_map = folium.Map(location=[37.8, -96], zoom_start=4)
+
+    # styles each state based on its cluster
+    def style_function(feature):
+        state_name = feature['properties']['name']
+        # default grey if state not found
+        color = state_cluster_map.get(state_name, "#d3d3d3")
+        return {'fillColor': color, 'color': 'black', 'weight': 1, 'fillOpacity': 0.7}
+
+    # adds states layer with colors
+    folium.GeoJson(
+        geojson_data,
+        name="Clusters",
+        style_function=style_function
+    ).add_to(us_map)
+
+    # generates cluster summary HTML to be added to map
+    cluster_summary_html = "<h4>Cluster Summary (Crime Rates per 100K)</h4><ul>"
+    for cluster, states in states_in_cluster.items():
+        means = cluster_actual_means[cluster]
+        cluster_summary_html += (
+            f"<li><b>Cluster {cluster + 1}</b>: "
+            f"{len(states)} states<br>"
+            f"Murder: {means[0]:.2f} per 100K<br>"
+            f"Assault: {means[1]:.2f} per 100K<br>"
+            f"UrbanPop: {means[2]:.2f}%<br>"
+            f"Rape: {means[3]:.2f} per 100K<br>"
+            f"States: {', '.join(states)}</li><br>"
+        )
+    cluster_summary_html += "</ul>"
+
+    # adds floating text box with actual cluster means
+    html_popup = folium.Html(cluster_summary_html, script=True)
+    popup = folium.Popup(html_popup, max_width=600)
+    folium.Marker(
+        [49, -125],
+        icon=folium.Icon(color="blue", icon="info-sign"),
+        popup=popup
+    ).add_to(us_map)
+
+    # layer control
+    folium.LayerControl().add_to(us_map)
+
+    # saves and displays the map
+    us_map.save("us_clusters_map.html")
+    print("A new map with cluster means (per 100K) has been generated: us_clusters_map.html")
+
+
+if __name__ == "__main__":
+    main()
